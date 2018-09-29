@@ -6,7 +6,7 @@ var share = require('./share');
 
 var port = 3080;
 
-share.connect();
+share.dbConnect();
 
 // var db; // db instance
 // MongoClient.connect(share.db.url, function(err, client) {
