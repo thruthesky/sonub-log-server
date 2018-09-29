@@ -10,7 +10,7 @@ NodeJS Server for sonub logging
 
 ```` json
 {
-    protocol: 'page-view',
+    function: 'pageView',
     domain?: string,
     from_year: number,
     from_month: number,
@@ -25,7 +25,7 @@ NodeJS Server for sonub logging
 
 ```` json
 {
-    protocol: 'page-view',
+    function: 'pageView',
     domain?: string,
     pageViews: {
         [date: string]: number

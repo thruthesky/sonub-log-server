@@ -1,7 +1,37 @@
-
-var mongoose = require('mongoose');
-
+const MongoClient = require('mongodb').MongoClient;
 var exports = module.exports = {};
+
+
+var client;
+var col; // client connection with collection
+
+
+/**
+ * 
+ * @example
+    const col = await share.dbConnect();
+    col.deleteMany({});
+    await runTest();
+    share.dbClose();
+ */
+exports.dbConnect = async function () {
+    console.log('Trying to connect to MongoDB...')
+    let db;
+    try {
+        client = await MongoClient.connect('mongodb://localhost');
+        db = client.db('test');
+    } catch (err) {
+        console.log(err.stack);
+        return;
+    }
+    col = db.collection('logs');
+    return col;
+};
+
+exports.dbClose = function () {
+    client.close();
+}
+
 
 exports.documentData = function (socket, data) {
     if (typeof data != 'object') {
@@ -17,16 +47,17 @@ exports.documentData = function (socket, data) {
         data.idx_member = 0;
     }
     var d = new Date();
-    if ( data.date ) {
-        d = new Date( data.date );
+    if (data.date) {
+        d = new Date(data.date);
     }
+
     
     return {
         domain: data.domain,
         ip: socket.request.connection.remoteAddress,
         userAgent: socket.request.headers['user-agent'],
         year: d.getFullYear(),
-        month: d.getMonth() + 1,
+        month: d.getMonth(),
         day: d.getDate(),
         hour: d.getHours(),
         time: d.getTime(),
@@ -35,112 +66,57 @@ exports.documentData = function (socket, data) {
     };
 }
 
+exports.getStat = async function (req) {
+    if (typeof this[req.function] != 'function') {
+        return {
+            code: -5,
+            message: 'function does not exists'
+        };
+    }
+
+    return await this[req.function](req);
+}
+
+exports.pageView = async function (req) {
+
+    // console.log('pageView: ', req);
 
 
-/**
- * Returns model
- */
-exports.initMongoose = function () {
+    const res = await col.find({
+        $and: [
+            {
+                year: {$gte: req.from_year },
+                month: {$gte: req.from_month },
+                day: {$gte: req.from_day }
+            },
+            {
+                year: {$lte: req.to_year },
+                month: {$lte: req.to_month },
+                day: {$lte: req.to_day }
+            }
+        ]
+    }).toArray();
 
-    var Logs = new mongoose.Schema({
-        domain: String,
-        ip: String,
-        path: String,
-        userAgent: String,
-        year: Number,
-        month: Number,
-        day: Number,
-        hour: Number,
-        time: Number,
-        idx_member: Number
-    }, {
-        collection: 'logs',
-        strict: false
-    });
+    // console.log('res: ', res);
 
+    return res;
+}
 
-    /**
-     * Create index on mongoose. No return value?
-     * 
-     * Each blog owner can Search/Display by hour.
-     */
-    Logs.index({
-        domain: 1,
-        year: 1,
-        month: 1,
-        day: 1,
-        hour: 1
-    }, {
-        name: 'domain_Ymdh'
-    });
+exports.log = async function (socket, data) {
+    const re = await col.insertOne( this.documentData(socket, data) );
+    if ( re.insertedCount == 1 ) {
 
-    /**
-     * Admin can display by date/time of total access.
-     */
-    Logs.index({
-        year: 1,
-        month: 1,
-        day: 1,
-        hour: 1
-    }, {
-        name: 'Ymdh'
-    });
-
-    /**
-     * Blog user can search no of IP on specific days.
-     */
-    Logs.index({
-        domain: 1,
-        time: 1,
-        ip: 1
-    }, {
-        name: 'domain_time_ip'
-    });
-    /**
-     * Admin can search no of IP on date/time.
-     */
-    Logs.index({
-        time: 1,
-        ip: 1
-    }, {
-        name: 'time_ip'
-    });
-
-    /**
-     * Blog admin can see which path access the most.
-     */
-    Logs.index({
-        domain: 1,
-        time: 1,
-        path: 1
-    }, {
-        name: 'domain_time_path'
-    });
-    /**
-     * Admin can see which path is access the most including all blogs.
-     */
-    Logs.index({
-        time: 1,
-        path: 1
-    }, {
-        name: 'time_path'
-    });
-
-
-    /**
-     * Admin can know which user access
-     */
-    Logs.index({
-        time: 1,
-        idx_member: 1
-    }, {
-        name: 'time_idx_member'
-    });
-
-    return mongoose.model('Logs', Logs);
+    } else {
+        console.log('error ... !');
+    }
 }
 
 
-exports.statPageView = function(req) {
-    
+exports.expectToBeTrue = function(re, msg) {
+    if ( re ) {
+        console.log(`SUCCESS: ${msg}`);
+    } else {
+        console.log(`FAILURE: ${msg}`);
+        console.log(`^^^^^^^^^^^^^^^`);
+    }
 }
