@@ -19,7 +19,8 @@ var Logs = new mongoose.Schema({
   month: Number,
   day: Number,
   hour: Number,
-  time: Number
+  time: Number,
+  idx_member: Number
 }, {
   collection: 'logs',
   strict: false
@@ -40,6 +41,7 @@ Logs.index({
 Logs.index({ ip: 1}, {name: 'ip'});
 Logs.index({ path: 1}, {name: 'path'});
 Logs.index({ time: 1}, {name: 'time'});
+Logs.index({ idx_member: 1}, {name: 'idx_member'});
 
 var logs = mongoose.model('Logs', Logs);
 
@@ -95,6 +97,7 @@ function documentData( socket, data ) {
     day: d.getDate(),
     hour: d.getHours(),
     time: d.getTime(),
-    path: data.path
+    path: data.path,
+    idx_member: data.idx_member
   };
 }
