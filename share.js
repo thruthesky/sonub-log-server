@@ -2,8 +2,14 @@ const MongoClient = require('mongodb').MongoClient;
 var exports = module.exports = {};
 
 
+const colNameLogs = 'logs';
+const colNamePageView = 'pageViews';
+
 var client;
-var col; // client connection with collection
+exports.cols = {
+    logs: null,
+    pageViews: null
+};
 
 
 /**
@@ -24,8 +30,11 @@ exports.dbConnect = async function () {
         console.log(err.stack);
         return;
     }
-    col = db.collection('logs');
-    return col;
+    this.cols.logs = db.collection('logs');
+    this.cols.pageViews = db.collection('pageViews');
+
+    await this.dbCreateIndexes(db);
+    return this.cols.logs;
 };
 
 exports.dbClose = function () {
@@ -51,7 +60,7 @@ exports.documentData = function (socket, data) {
         d = new Date(data.date);
     }
 
-    
+
     return {
         domain: data.domain,
         ip: socket.request.connection.remoteAddress,
@@ -67,35 +76,62 @@ exports.documentData = function (socket, data) {
 }
 
 exports.getStat = async function (req) {
-    if (typeof this[req.function] != 'function') {
+    // console.log('getStat: ', req.query);
+    if (typeof this[req.query.function] != 'function') {
         return {
             code: -5,
             message: 'function does not exists'
         };
     }
-
-    return await this[req.function](req);
+    const res = await this[req.query.function](req);
+    // console.log(`Return of ${req.query.function}: `, res);
+    return res;
 }
 
 exports.pageView = async function (req) {
 
-    // console.log('pageView: ', req);
+    // console.log('pageView: ', req.query);
+
+    const q = req.query;
 
 
-    const res = await col.find({
+    const spec = {
         $and: [
+            { domain: q.domain },
             {
-                year: {$gte: req.from_year },
-                month: {$gte: req.from_month },
-                day: {$gte: req.from_day }
+                year: {
+                    $gte: parseInt(q.from_year, 10)
+                },
+                month: {
+                    $gte: parseInt(q.from_month, 10)
+                },
+                day: {
+                    $gte: parseInt(q.from_day, 10)
+                }
             },
             {
-                year: {$lte: req.to_year },
-                month: {$lte: req.to_month },
-                day: {$lte: req.to_day }
+                year: {
+                    $lte: parseInt(q.to_year, 10)
+                },
+                month: {
+                    $lte: parseInt(q.to_month, 10)
+                },
+                day: {
+                    $lte: parseInt(q.to_day, 10)
+                }
             }
         ]
-    }).toArray();
+    };
+    const res = await this.cols.pageViews.find(spec)
+        .project({
+            _id: 0,
+            year: 1,
+            month: 1,
+            day: 1,
+            count: 1
+        })
+        .toArray();
+
 
     // console.log('res: ', res);
 
@@ -103,8 +139,10 @@ exports.pageView = async function (req) {
 }
 
 exports.log = async function (socket, data) {
-    const re = await col.insertOne( this.documentData(socket, data) );
-    if ( re.insertedCount == 1 ) {
+    const logObject = this.documentData(socket, data);
+    const re = await this.cols.logs.insertOne(logObject);
+    this.preProcess(logObject);
+    if (re.insertedCount == 1) {
 
     } else {
         console.log('error ... !');
@@ -112,11 +150,114 @@ exports.log = async function (socket, data) {
 }
 
 
-exports.expectToBeTrue = function(re, msg) {
-    if ( re ) {
+exports.expectToBeTrue = function (re, msg) {
+    if (re) {
         console.log(`SUCCESS: ${msg}`);
     } else {
         console.log(`FAILURE: ${msg}`);
         console.log(`^^^^^^^^^^^^^^^`);
     }
+}
+
+
+/**
+ * 
+ * @param {*} obj is log object
+ *
+ * @todo transaction
+ */
+exports.preProcess = async function (obj) {
+
+    await this.preProcessPageView(obj);
+
+}
+
+
+/**
+ * Do log pre processing for page view.
+ * @param {*} obj log object
+ */
+exports.preProcessPageView = async function (obj) {
+    let spec = {
+        year: obj.year,
+        month: obj.month,
+        day: obj.day
+    };
+    await this.increaseCountBySpec( spec );
+
+    spec = {
+        domain: obj.domain,
+        year: obj.year,
+        month: obj.month,
+        day: obj.day
+    };
+    await this.increaseCountBySpec( spec );
+}
+
+exports.increaseCountBySpec = async function( spec ) {
+    const re = await this.cols.pageViews.find(spec).toArray();
+    let count = 0;
+    if (re.length) {
+        count = re[0].count;
+    }
+    count++;
+    await this.cols.pageViews.updateOne(spec, {
+        $set: {
+            count: count
+        }
+    }, {
+        upsert: true
+    });
+}
+
+
+
+exports.dbCreateIndexes = async function () {
+    await this.cols.logs.createIndex({
+        domain: 1,
+        year: 1,
+        month: 1,
+        day: 1,
+        hour: 1
+    });
+    await this.cols.logs.createIndex({
+        year: 1,
+        month: 1,
+        day: 1,
+        hour: 1
+    });
+    await this.cols.logs.createIndex({
+        domain: 1,
+        time: 1,
+        ip: 1
+    });
+    await this.cols.logs.createIndex({
+        time: 1,
+        ip: 1
+    });
+    await this.cols.logs.createIndex({
+        domain: 1,
+        time: 1,
+        path: 1
+    });
+    await this.cols.logs.createIndex({
+        time: 1,
+        path: 1
+    });
+    await this.cols.logs.createIndex({
+        time: 1,
+        idx_member: 1
+    });
+
+    await this.cols.pageViews.createIndex({
+        year: 1,
+        month: 1,
+        day: 1
+    });
+    await this.cols.pageViews.createIndex({
+        domain: 1,
+        year: 1,
+        month: 1,
+        day: 1
+    });
 }

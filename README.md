@@ -27,7 +27,12 @@ NodeJS Server for sonub logging
 {
     function: 'pageView',
     domain?: string,
-    pageViews: {
+    from_year: number,
+    from_month: number,
+    from_day: number,
+    to_year: number,
+    to_month: number,
+    data: {
         [date: string]: number
     }
 }
