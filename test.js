@@ -10,6 +10,7 @@ var col;
 
 async function runTest() {
     await testData();
+    await testPreProcessingPageView();
     await testPageView();
 }
 
@@ -41,7 +42,7 @@ async function testData() {
 
 
 async function testPageView() {
-    const req = {
+    let req = {
         function: 'pageView',
         domain: 'test-domain-1',
         from_year: 2018,
@@ -51,15 +52,52 @@ async function testPageView() {
         to_month: 3,
         to_day: 3
     };
-
-    const res = await share.getStat(req);
-
-    // console.log('r: ', res);
-
-    /// res ok or not.
-    // console.log("res: ", res.length);
-
-    share.expectToBeTrue( res.length == 1, "Got data of 2018-3-3");
+    let res = await share.getStat({ query: req });
+    share.expectToBeTrue( res.length == 1, "Got one(1) data of 2018-3-3");
     const r = res.pop();
     share.expectToBeTrue( r.year == 2018 && r.month == 3 && r.day == 3, 'Data correct' );
+    share.expectToBeTrue( typeof r._id == 'undefined', 'Yeap! no _id on result');
+
+
+    req = {
+        function: 'pageView',
+        domain: 'test-domain-1',
+        from_year: 2018,
+        from_month: 3,
+        from_day: 3,
+        to_year: 2018,
+        to_month: 3,
+        to_day: 5
+    };
+    res = await share.getStat({ query: req });
+    share.expectToBeTrue( res.length == 3, "Got three docs");
 }
+
+async function testPreProcessingPageView() {
+
+    const spec = {
+        year: 2018,
+        month: 05,
+        day: 05,
+    };
+
+    await share.cols.pageViews.deleteOne(spec);
+    let re = await share.cols.pageViews.find(spec).toArray();
+    share.expectToBeTrue( re.length == 0, 'Count does not exists on page view: 2018-05-05');
+
+    await share.preProcessPageView(spec);
+    re = await share.cols.pageViews.find(spec).toArray();
+    share.expectToBeTrue( re.length == 1, 'Count exists on page view: 2018-05-05');
+
+    await share.preProcessPageView(spec);
+    re = await share.cols.pageViews.find(spec).toArray();
+    share.expectToBeTrue( re.length == 1 && re[0].count == 2, 'Count on page view: 2018-05-05 must be 2');
+
+    await share.preProcessPageView(spec);
+    re = await share.cols.pageViews.find(spec).toArray();
+    share.expectToBeTrue( re.length == 1 && re[0].count == 3, 'Count on page view: 2018-05-05 must be 3');
+
+
+}
+
+

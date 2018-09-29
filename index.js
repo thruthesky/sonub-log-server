@@ -1,3 +1,4 @@
+var cors = require('cors')
 var app = require('express')();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
@@ -8,13 +9,7 @@ var port = 3080;
 
 share.dbConnect();
 
-// var db; // db instance
-// MongoClient.connect(share.db.url, function(err, client) {
-//   console.log("Connected successfully to MongoDb server");
-//   db = client.db(share.db.name);
-// });
-
-
+app.use(cors());
 /**
  * '0.0.0.0' means we want to use IPv4
  */
@@ -22,9 +17,12 @@ server.listen(port, '0.0.0.0', function () {
   console.log(`Server starts on ${port} with IPv4`);
 });
 
-app.get('/', function (req, res) {
-  res.sendfile(__dirname + '/index.html');
-});
+app.get('/', async function (req, res) {
+  const ret = Object.assign({}, req.query);
+  ret['data'] = await share.getStat(req);
+  res.json(ret);
+})
+
 
 /**
  * Wait for client connection
@@ -51,4 +49,3 @@ io.on('connection', function (socket) {
   });
 
 });
-
