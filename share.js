@@ -8,9 +8,10 @@ const colNamePageView = 'pageViews';
 var client;
 exports.cols = {
     logs: null,
-    pageViews: null,
-    siteVisitors: null,
-    siteUniqueVisitors: null
+    rootSitePageViews: null,
+    blogSitePageViews: null,
+    rootSiteVisitorsByIp: null,
+    blogSiteVisitorsByIp: null
 };
 
 
@@ -33,9 +34,10 @@ exports.dbConnect = async function () {
         return;
     }
     this.cols.logs = db.collection('logs');
-    this.cols.pageViews = db.collection('pageViews');
-    this.cols.siteVisitors = db.collection('siteVisitors');
-    this.cols.siteUniqueVisitors = db.collection('siteUniqueVisitors');
+    this.cols.rootSitePageViews = db.collection('rootSitePageViews');
+    this.cols.blogSitePageViews = db.collection('blogSitePageViews');
+    this.cols.rootSiteVisitorsByIp = db.collection('rootSiteVisitorsByIp');
+    this.cols.blogSiteVisitorsByIp = db.collection('blogSiteVisitorsByIp');
 
     await this.dbCreateIndexes(db);
     return this.cols;
@@ -231,7 +233,7 @@ exports.expectToBeTrue = function (re, msg) {
  */
 exports.preProcess = async function (obj) {
     await this.preProcessPageView(obj);
-    await this.preProcessPageVisitor(obj);
+    await this.preProcessSiteVisitorByIP(obj);
 }
 
 
@@ -245,7 +247,7 @@ exports.preProcessPageView = async function (obj) {
         month: obj.month,
         day: obj.day
     };
-    await this.increaseCountBySpec( spec );
+    await this.increaseCountBySpec('rootSitePageViews', spec );
 
     spec = {
         domain: obj.domain,
@@ -253,17 +255,17 @@ exports.preProcessPageView = async function (obj) {
         month: obj.month,
         day: obj.day
     };
-    await this.increaseCountBySpec( spec );
+    await this.increaseCountBySpec('blogSitePageViews', spec );
 }
 
-exports.increaseCountBySpec = async function( spec ) {
-    const re = await this.cols.pageViews.find(spec).toArray();
+exports.increaseCountBySpec = async function( colName, spec ) {
+    const re = await this.cols[colName].find(spec).toArray();
     let count = 0;
     if (re.length) {
         count = re[0].count;
     }
     count++;
-    await this.cols.pageViews.updateOne(spec, {
+    await this.cols[colName].updateOne(spec, {
         $set: {
             count: count
         }
@@ -272,68 +274,79 @@ exports.increaseCountBySpec = async function( spec ) {
     });
 }
 
-exports.preProcessPageVisitor = async function (obj) {
+exports.preProcessSiteVisitorByIP = async function (obj) {
     let spec = {
         year: obj.year,
         month: obj.month,
         day: obj.day,
         ip: obj.ip
     };
-    let re = await this.cols.siteVisitors.find(spec).toArray();
-    var set = {};
-    if (re.length) {
-        set['idx_member'] = re[0].idx_member;
-        set['idx_member'][obj.idx_member] = true;
-    } else {
-        set = {
-            domain: obj.domain,
-            idx_member: {
-                [obj.idx_member]: true
-            }
-        }
-    }
-    re = await this.cols.siteVisitors.updateOne(spec, {
-        $set: set
-    }, {
-        upsert: true
-    });
+    this.increaseCountBySpec('rootSiteVisitorsByIp', spec);
 
-    spec = {
-        year: obj.year,
-        month: obj.month,
-        day: obj.day
-    };
-    await this.increasesiteUniqueVisitorsBySpec( spec );
-    spec = {
-        domain: obj.domain,
-        year: obj.year,
-        month: obj.month,
-        day: obj.day
-    };
-    await this.increasesiteUniqueVisitorsBySpec( spec );
+    spec['domain'] = obj.domain;
+    this.increaseCountBySpec('blogSiteVisitorsByIp', spec);
 
-    if (re.matchedCount == 0) {
-    } else {
-        // console.log('ip exist');
-    }
+    // let re = await this.cols.siteVisitors.find(spec).toArray();
+
+
+
+    // var set = {};
+    // if (re.length) {
+    //     set['idx_member'] = re[0].idx_member;
+    //     set['idx_member'][obj.idx_member] = true;
+    // } else {
+    //     set = {
+    //         domain: obj.domain,
+    //         idx_member: {
+    //             [obj.idx_member]: true
+    //         }
+    //     }
+    // }
+
+
+
+    // re = await this.cols.siteVisitors.updateOne(spec, {
+    //     $set: set
+    // }, {
+    //     upsert: true
+    // });
+
+    // spec = {
+    //     year: obj.year,
+    //     month: obj.month,
+    //     day: obj.day
+    // };
+    // await this.increasesiteUniqueVisitorsBySpec( spec );
+    // spec = {
+    //     domain: obj.domain,
+    //     year: obj.year,
+    //     month: obj.month,
+    //     day: obj.day
+    // };
+    // await this.increasesiteUniqueVisitorsBySpec( spec );
+
+    // if (re.matchedCount == 0) {
+    // } else {
+    //     // console.log('ip exist');
+    // }
 
 }
 
-exports.increasesiteUniqueVisitorsBySpec = async function( spec ) {
-    const re = await this.cols.siteUniqueVisitors.find(spec).toArray();
-    let count = 0;
-    if ( re.length ) {
-        count = re[0].count;
-    }
-    count++;
-    await this.cols.siteUniqueVisitors.updateOne(spec, {
-        $set: {
-            count: count
-        }
-    }, {
-        upsert: true
-    });
-}
+// exports.increasesiteUniqueVisitorsBySpec = async function( spec ) {
+//     const re = await this.cols.siteUniqueVisitors.find(spec).toArray();
+//     let count = 0;
+//     if ( re.length ) {
+//         count = re[0].count;
+//     }
+//     count++;
+//     await this.cols.siteUniqueVisitors.updateOne(spec, {
+//         $set: {
+//             count: count
+//         }
+//     }, {
+//         upsert: true
+//     });
+// }
 
 
 exports.dbCreateIndexes = async function () {
@@ -379,40 +392,29 @@ exports.dbCreateIndexes = async function () {
     /**
      * PageView Indexes
      */
-    await this.cols.pageViews.createIndex({
+    await this.cols.rootSitePageViews.createIndex({
         year: 1,
         month: 1,
         day: 1
     });
-    await this.cols.pageViews.createIndex({
+    await this.cols.blogSitePageViews.createIndex({
         domain: 1,
         year: 1,
         month: 1,
         day: 1
     });
-    await this.cols.siteVisitors.createIndex({
+    await this.cols.rootSiteVisitorsByIp.createIndex({
         year: 1,
         month: 1,
         day: 1,
         ip: 1
     });
-    await this.cols.siteVisitors.createIndex({
+    await this.cols.blogSiteVisitorsByIp.createIndex({
         domain: 1,
         year: 1,
         month: 1,
         day: 1,
         ip: 1
     });
-    await this.cols.siteUniqueVisitors.createIndex({
-        year: 1,
-        month: 1,
-        day: 1
-    });
-    await this.cols.siteUniqueVisitors.createIndex({
-        domain: 1,
-        year: 1,
-        month: 1,
-        day: 1
-    });
-
+    
 }

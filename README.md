@@ -2,6 +2,12 @@
 
 NodeJS Server for sonub logging
 
+## style guide
+
+1 file. one thing.
+1 function does only one thing.
+
+
 ## Protocol
 
 ### Page view
