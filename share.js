@@ -152,61 +152,6 @@ exports.pageView = async function (req) {
     return res;
 }
 
-// exports.siteUniqueVisitorsView = async function (req) {
-//     // console.log('siteUniqueVisitorsView: ', req.query);
-//     const q = req.query;
-//     const spec = {
-//         $and: [
-//             {
-//                 year: {
-//                     $gte: parseInt(q.from_year, 10)
-//                 },
-//                 month: {
-//                     $gte: parseInt(q.from_month, 10)
-//                 },
-//                 day: {
-//                     $gte: parseInt(q.from_day, 10)
-//                 }
-//             },
-//             {
-//                 year: {
-//                     $lte: parseInt(q.to_year, 10)
-//                 },
-//                 month: {
-//                     $lte: parseInt(q.to_month, 10)
-//                 },
-//                 day: {
-//                     $lte: parseInt(q.to_day, 10)
-//                 }
-//             }
-//         ]
-//     };
-
-
-//     if ( q.domain != void 0 ) {
-//         spec['$and'].push( { domain: q.domain });
-//     } else {
-//         spec['$and'].push( { domain: {$exists: false} });
-//     }
-
-//     // console.log('siteUniqueVisitorsView::spec', spec);
-//     const res = await this.cols.siteUniqueVisitors.find(spec)
-//         .project({
-//             _id: 1,
-//             domain: 1,
-//             year: 1,
-//             month: 1,
-//             day: 1,
-//             count: 1
-//         })
-//         .toArray();
-//     // console.log('res: ', res);
-
-//     if ( res ) return res;
-//     else return [];
-// }
-
-
 
 exports.log = async function (socket, data) {
     const logObject = this.documentData(socket, data);
@@ -286,6 +231,7 @@ exports.preProcessSiteVisitorByIP = async function (obj) {
         month: obj.month,
         day: obj.day
     };
+    // await this.increaseCountBySpec('rootSiteVisitorsByIp', spec, { unique: 'ip' });
 
     /**
      * Count by Unique IP.
@@ -294,7 +240,7 @@ exports.preProcessSiteVisitorByIP = async function (obj) {
     const findSpec = Object.assign({ ip: obj.ip }, spec );
     const f = await this.cols.logs.find( findSpec ).toArray();
     if ( f.length == 1 ) {
-        await this.increaseCountBySpec('rootSiteVisitorsByIp', spec);
+        await this.increaseCountBySpec('rootSiteVisitorsByIp', spec, { unique: 'ip' });
     }
 
     /**
@@ -308,67 +254,7 @@ exports.preProcessSiteVisitorByIP = async function (obj) {
         await this.increaseCountBySpec('blogSiteVisitorsByIp', spec);
     }
 
-    // let re = await this.cols.siteVisitors.find(spec).toArray();
-
-
-
-    // var set = {};
-    // if (re.length) {
-    //     set['idx_member'] = re[0].idx_member;
-    //     set['idx_member'][obj.idx_member] = true;
-    // } else {
-    //     set = {
-    //         domain: obj.domain,
-    //         idx_member: {
-    //             [obj.idx_member]: true
-    //         }
-    //     }
-    // }
-
-
-
-    // re = await this.cols.siteVisitors.updateOne(spec, {
-    //     $set: set
-    // }, {
-    //     upsert: true
-    // });
-
-    // spec = {
-    //     year: obj.year,
-    //     month: obj.month,
-    //     day: obj.day
-    // };
-    // await this.increasesiteUniqueVisitorsBySpec( spec );
-    // spec = {
-    //     domain: obj.domain,
-    //     year: obj.year,
-    //     month: obj.month,
-    //     day: obj.day
-    // };
-    // await this.increasesiteUniqueVisitorsBySpec( spec );
-
-    // if (re.matchedCount == 0) {
-    // } else {
-    //     // console.log('ip exist');
-    // }
-
 }
-
-// exports.increasesiteUniqueVisitorsBySpec = async function( spec ) {
-//     const re = await this.cols.siteUniqueVisitors.find(spec).toArray();
-//     let count = 0;
-//     if ( re.length ) {
-//         count = re[0].count;
-//     }
-//     count++;
-//     await this.cols.siteUniqueVisitors.updateOne(spec, {
-//         $set: {
-//             count: count
-//         }
-//     }, {
-//         upsert: true
-//     });
-// }
 
 
 exports.dbCreateIndexes = async function () {
