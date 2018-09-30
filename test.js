@@ -107,6 +107,10 @@ async function testPageView() {
 
 async function testVisitor() {
     console.log('======> testVisitor');
+
+
+
+
     let req = {
         function: 'siteUniqueVisitorsView',
         domain: 'test-domain-3',
@@ -119,8 +123,10 @@ async function testVisitor() {
     };
     let res = await share.getStat({ query: req });
     share.expectToBeTrue( res.length == 1, "Result must be 1 = got (" + res.length + ")  data of 2018-3-3");
-    share.expectToBeTrue( res[0].count == 2, "Count must be 2 = got (" + res[0].count + ")  data of 2018-3-3");
-    
+    share.expectToBeTrue( res[0].count == 2, "siteUniqueVisitorsView:: Count must be 2 = got (" + res[0].count + ")  data of 2018-3-3");
+
+    res = await col.siteVisitors.find({ domain: req.domain, year: req.from_year, month:req.from_month, day: req.from_day }).toArray();
+    share.expectToBeTrue( res.length == 2, 'siteVisitors:: there should 2 record in siteVisitors. base on the count above.');
     
     req = {
         function: 'siteUniqueVisitorsView',
@@ -133,4 +139,9 @@ async function testVisitor() {
     };
     res = await share.getStat({ query: req });
     share.expectToBeTrue( res.length == 3 && res[0].count == 2 && res[1].count == 2 && res[2].count == 2, "testVisitor should be 3 =  " + res.length + " and all count should be 2");
+    
+    res = await col.siteVisitors.find({
+        $and: [ { year: {$gte: req.from_year}, month: {$gte: req.from_month}, day: {$gte:  req.from_day} },
+            { year: {$lte: req.to_year}, month: {$lte: req.to_month}, day: {$lte:  req.to_day} }]}).toArray();
+    share.expectToBeTrue( res.length == 6, 'siteVisitors:: there should 6 record in siteVisitors. base on the count above.');
 }

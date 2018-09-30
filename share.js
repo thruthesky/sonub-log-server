@@ -286,6 +286,7 @@ exports.preProcessPageVisitor = async function (obj) {
         set['idx_member'][obj.idx_member] = true;
     } else {
         set = {
+            domain: obj.domain,
             idx_member: {
                 [obj.idx_member]: true
             }
