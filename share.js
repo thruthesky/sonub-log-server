@@ -43,8 +43,14 @@ exports.dbConnect = async function () {
     return this.cols;
 };
 
-exports.dbClose = function () {
-    client.close();
+exports.dbClose = async function () {
+    try {
+        await client.close();
+    } catch ( e ) {
+        console.log('=================> Caught in DB closing...');
+        console.log(e.message);
+    }
+    
 }
 
 
@@ -146,59 +152,59 @@ exports.pageView = async function (req) {
     return res;
 }
 
-exports.siteUniqueVisitorsView = async function (req) {
-    // console.log('siteUniqueVisitorsView: ', req.query);
-    const q = req.query;
-    const spec = {
-        $and: [
-            {
-                year: {
-                    $gte: parseInt(q.from_year, 10)
-                },
-                month: {
-                    $gte: parseInt(q.from_month, 10)
-                },
-                day: {
-                    $gte: parseInt(q.from_day, 10)
-                }
-            },
-            {
-                year: {
-                    $lte: parseInt(q.to_year, 10)
-                },
-                month: {
-                    $lte: parseInt(q.to_month, 10)
-                },
-                day: {
-                    $lte: parseInt(q.to_day, 10)
-                }
-            }
-        ]
-    };
+// exports.siteUniqueVisitorsView = async function (req) {
+//     // console.log('siteUniqueVisitorsView: ', req.query);
+//     const q = req.query;
+//     const spec = {
+//         $and: [
+//             {
+//                 year: {
+//                     $gte: parseInt(q.from_year, 10)
+//                 },
+//                 month: {
+//                     $gte: parseInt(q.from_month, 10)
+//                 },
+//                 day: {
+//                     $gte: parseInt(q.from_day, 10)
+//                 }
+//             },
+//             {
+//                 year: {
+//                     $lte: parseInt(q.to_year, 10)
+//                 },
+//                 month: {
+//                     $lte: parseInt(q.to_month, 10)
+//                 },
+//                 day: {
+//                     $lte: parseInt(q.to_day, 10)
+//                 }
+//             }
+//         ]
+//     };
 
 
-    if ( q.domain != void 0 ) {
-        spec['$and'].push( { domain: q.domain });
-    } else {
-        spec['$and'].push( { domain: {$exists: false} });
-    }
+//     if ( q.domain != void 0 ) {
+//         spec['$and'].push( { domain: q.domain });
+//     } else {
+//         spec['$and'].push( { domain: {$exists: false} });
+//     }
 
-    // console.log('siteUniqueVisitorsView::spec', spec);
-    const res = await this.cols.siteUniqueVisitors.find(spec)
-        .project({
-            _id: 1,
-            domain: 1,
-            year: 1,
-            month: 1,
-            day: 1,
-            count: 1
-        })
-        .toArray();
-    // console.log('res: ', res);
+//     // console.log('siteUniqueVisitorsView::spec', spec);
+//     const res = await this.cols.siteUniqueVisitors.find(spec)
+//         .project({
+//             _id: 1,
+//             domain: 1,
+//             year: 1,
+//             month: 1,
+//             day: 1,
+//             count: 1
+//         })
+//         .toArray();
+//     // console.log('res: ', res);
 
-    if ( res ) return res;
-    else return [];
-}
+//     if ( res ) return res;
+//     else return [];
+// }
 
 
 
@@ -210,7 +216,7 @@ exports.log = async function (socket, data) {
     } else {
         console.log('error ... !');
     }    
-    this.preProcess(logObject);
+    await this.preProcess(logObject);
 
 }
 
@@ -278,13 +284,29 @@ exports.preProcessSiteVisitorByIP = async function (obj) {
     let spec = {
         year: obj.year,
         month: obj.month,
-        day: obj.day,
-        ip: obj.ip
+        day: obj.day
     };
-    this.increaseCountBySpec('rootSiteVisitorsByIp', spec);
 
-    spec['domain'] = obj.domain;
-    this.increaseCountBySpec('blogSiteVisitorsByIp', spec);
+    /**
+     * Count by Unique IP.
+     * If same IP access twice, then don't count it.
+     */
+    const findSpec = Object.assign({ ip: obj.ip }, spec );
+    const f = await this.cols.logs.find( findSpec ).toArray();
+    if ( f.length == 1 ) {
+        await this.increaseCountBySpec('rootSiteVisitorsByIp', spec);
+    }
+
+    /**
+     * Count by Unique IP per each blog.
+     * If same IP access the same blog, then don't count it.
+     */
+    const findBlogIpspec = Object.assign({ ip: obj.ip, domain: obj.domain }, spec);
+    const fb = await this.cols.logs.find( findBlogIpspec ).toArray();
+    if ( fb.length == 1 ) {
+        spec['domain'] = obj.domain;
+        await this.increaseCountBySpec('blogSiteVisitorsByIp', spec);
+    }
 
     // let re = await this.cols.siteVisitors.find(spec).toArray();
 

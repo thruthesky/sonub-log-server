@@ -3,11 +3,12 @@ var col;
 (async () => {
     col = await share.dbConnect();
     await col.logs.deleteMany({});
-    await col.pageViews.deleteMany({});
-    await col.siteVisitors.deleteMany({});
-    await col.siteUniqueVisitors.deleteMany({});
+    await col.rootSitePageViews.deleteMany({});
+    await col.blogSitePageViews.deleteMany({});
+    await col.rootSiteVisitorsByIp.deleteMany({});
+    await col.blogSiteVisitorsByIp.deleteMany({});
     await runTest();
-    share.dbClose();
+    await share.dbClose();
 
 })();
 
@@ -102,6 +103,21 @@ async function createTestData() {
         }
     }
 
-    const re = await col.logs.find({}).toArray();
-    share.expectToBeTrue(re.length == 1008*2, `Test data generated: ${re.length}`);
+    let re = await col.logs.find({}).toArray();
+    share.expectToBeTrue(re.length == 1008 * 2, `Test data generated: ${re.length}`);
+
+    re = await col.rootSitePageViews.find({}).toArray();
+    share.expectToBeTrue(re.length == 1008, `Test data generated: ${re.length}`);
+
+    re = await col.blogSitePageViews.find({}).toArray();
+    share.expectToBeTrue(re.length == 1008, `Test data generated: ${re.length}`);
+
+
+    re = await col.rootSiteVisitorsByIp.find({}).toArray();
+    share.expectToBeTrue(re.length == 1008, `Test data generated: ${re.length}`);
+
+    re = await col.blogSiteVisitorsByIp.find({}).toArray();
+    share.expectToBeTrue(re.length == 1008, `Test data generated: ${re.length}`);
+
+
 }
