@@ -2,9 +2,13 @@ var share = require('./share');
 var col;
 (async () => {
     col = await share.dbConnect();
-    await col.deleteMany({});
+    await col.logs.deleteMany({});
+    await col.pageViews.deleteMany({});
+    await col.siteVisitors.deleteMany({});
+    await col.siteUniqueVisitors.deleteMany({});
     await runTest();
     share.dbClose();
+
 })();
 
 async function runTest() {
@@ -59,12 +63,45 @@ async function createTestData() {
 
                 console.log(month, day);
                 await share.log(socket, data);
-
-                
             }
         }
     }
 
-    const re = await col.find({}).toArray();
-    share.expectToBeTrue(re.length == 1008, `Test data generated: ${re.length}`);
+    for (var year of [2017, 2018, 2019]) {
+        for (var month = 0; month <= 11; month++) {
+            for (var day = 1; day < 29; day++) {
+                const obj = {
+                    ip: `1.2.${month+20}.${day}`,
+                    domain: `test-domain-${day}`,
+                    userAgent: `Android ${day}`,
+                    path: `/page-${year}-${month}-${day}`,
+                    idx_member: month,
+                    date: new Date(year, month, day, 5, day, day)
+                };
+
+                const socket = {
+                    request: {
+                        connection: {
+                            remoteAddress: obj.ip
+                        },
+                        headers: {
+                            'user-agent': obj.userAgent
+                        }
+                    }
+                };
+                const data = {
+                    domain: obj.domain,
+                    path: obj.path,
+                    idx_member: obj.idx_member,
+                    date: obj.date
+                };
+
+                console.log(month, day);
+                await share.log(socket, data);
+            }
+        }
+    }
+
+    const re = await col.logs.find({}).toArray();
+    share.expectToBeTrue(re.length == 1008*2, `Test data generated: ${re.length}`);
 }
