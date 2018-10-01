@@ -18,6 +18,7 @@ async function runTest() {
 
 
 async function testData() {
+    console.log('======> testData');
     const re = await col.logs.find({}).toArray();
     share.expectToBeTrue(re.length == 1008*2, 'Test data generated');
 
@@ -44,29 +45,29 @@ async function testData() {
 
 
 async function testPreProcessingPageView() {
-
+    console.log('======> testPreProcessingPageView');
     const spec = {
         year: 2018,
         month: 05,
         day: 05,
     };
 
-    await col.pageViews.deleteOne(spec);
-    let re = await col.pageViews.find(spec).toArray();
+    await col.rootSitePageViews.deleteOne(spec);
+    let re = await col.rootSitePageViews.find(spec).toArray();
     
     share.expectToBeTrue( re.length == 0, 'Count does not exists on page view: 2018-05-05');
 
     await share.preProcessPageView(spec);
-    re = await col.pageViews.find(spec).toArray();
+    re = await col.rootSitePageViews.find(spec).toArray();
     share.expectToBeTrue( re.length == 1, 'Count exists on page view: 2018-05-05');
 
     await share.preProcessPageView(spec);
-    re = await col.pageViews.find(spec).toArray();
-    share.expectToBeTrue( re.length == 1 && re[0].count == 4, 'Count on page view: 2018-05-05 must be 4 = ' + re[0].count);
+    re = await col.rootSitePageViews.find(spec).toArray();
+    share.expectToBeTrue( re.length == 1 && re[0].count == 2, 'Count on page view: 2018-05-05 must be 2 = ' + re[0].count);
 
     await share.preProcessPageView(spec);
-    re = await col.pageViews.find(spec).toArray();
-    share.expectToBeTrue( re.length == 1 && re[0].count == 6, 'Count on page view: 2018-05-05 must be 6 = ' + re[0].count);
+    re = await col.rootSitePageViews.find(spec).toArray();
+    share.expectToBeTrue( re.length == 1 && re[0].count == 3, 'Count on page view: 2018-05-05 must be 3 = ' + re[0].count);
 
 
 }

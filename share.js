@@ -100,44 +100,140 @@ exports.getStat = async function (req) {
     return res;
 }
 
+
+
 exports.pageView = async function (req) {
     // console.log('pageView: ', req.query);
     const q = req.query;
     const spec = {
         $and: [
-            {
-                year: {
-                    $gte: parseInt(q.from_year, 10)
+            { 
+                $or: [{
+                    year: {
+                        $gte: parseInt(q.from_year, 10)
+                    },
+                    month: {
+                        $gte: parseInt(q.from_month, 10)
+                    },
+                    day: {
+                        $gte: parseInt(q.from_day, 10)
+                    }
                 },
-                month: {
-                    $gte: parseInt(q.from_month, 10)
-                },
-                day: {
-                    $gte: parseInt(q.from_day, 10)
-                }
+                { $and:[{
+                    year: parseInt(q.from_year, 10),
+                    month: parseInt(q.from_month, 10)
+                    },{
+                        day: {
+                            $gte: parseInt(q.from_day, 10)
+                        } 
+                    }]
+                    
+                }]
             },
             {
-                year: {
-                    $lte: parseInt(q.to_year, 10)
+                $or: [{
+                    year: {
+                        $lte: parseInt(q.to_year, 10)
+                    },
+                    month: {
+                        $lte: parseInt(q.to_year, 10)
+                    },
+                    day: {
+                        $lte: parseInt(q.to_year, 10)
+                    }
                 },
-                month: {
-                    $lte: parseInt(q.to_month, 10)
-                },
-                day: {
-                    $lte: parseInt(q.to_day, 10)
-                }
+                { $and:[{
+                    year: parseInt(q.to_year, 10),
+                    month: parseInt(q.to_year, 10)
+                    },{
+                        day: {
+                            $lte: parseInt(q.to_year, 10)
+                        } 
+                    }]
+                    
+                }]
             }
         ]
     };
 
+
+    // const spec = {
+    //     $and: [{ 
+    //         $and: [{  
+    //                 $or: [{
+    //                     year: { $gte: parseInt(q.from_year, 10) } 
+    //                 }, 
+    //                 { 
+    //                     $and: [{
+    //                         year: parseInt(q.from_year, 10)
+    //                     },
+    //                     { 
+    //                         month: {
+    //                             $gte: parseInt(q.from_month, 10)
+    //                         }
+    //                     }]
+    //                 }]
+    //             },
+    //             {  
+    //                 $or: [{
+    //                     month: { $gte: parseInt(q.from_month, 10) } 
+    //                 }, 
+    //                 { 
+    //                     $and: [{
+    //                         month: parseInt(q.from_month, 10)
+    //                     },
+    //                     { 
+    //                         day: {
+    //                             $gte: parseInt(q.from_day, 10)
+    //                         }
+    //                     }]
+    //                 }]
+    //             }]
+    //         },
+    //         { 
+    //             $and: [{  
+    //                 $or: [{
+    //                     year: { $lte: parseInt(q.to_year, 10) } 
+    //                 }, 
+    //                 { 
+    //                     $and: [{
+    //                         year: parseInt(q.to_year, 10)
+    //                     },
+    //                     { 
+    //                         month: {
+    //                             $lte: parseInt(q.to_month, 10)
+    //                         }
+    //                     }]
+    //                 }]
+    //             },
+    //             {  
+    //                 $or: [{
+    //                     month: { $lte: parseInt(q.to_month, 10) } 
+    //                 }, 
+    //                 { 
+    //                     $and: [{
+    //                         month: parseInt(q.to_month, 10)
+    //                     },
+    //                     { 
+    //                         day: {
+    //                             $lte: parseInt(q.to_day, 10)
+    //                         }
+    //                     }]
+    //                 }]
+    //             }]
+    //         }]
+    // };
+
+    /**
+     * check of blog or main
+     */
+    let blog = 'rootSitePageViews';
     if ( q.domain != void 0 ) {
-        spec['$and'].push( { domain: q.domain });
-    } else {
-        spec['$and'].push( { domain: {$exists: false} });
+        blog = 'blogSitePageViews';
     }
 
-    // console.log("pageView::spec", spec)
-    const res = await this.cols.pageViews.find(spec)
+    // console.log("pageView::spec", q, blog, q.domain);
+    const res = await this.cols[blog].find(spec)
         .project({
             _id: 0,
             domain: 1,
