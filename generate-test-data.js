@@ -1,7 +1,8 @@
 var share = require('./share');
 var col;
 (async () => {
-    col = await share.dbConnect();
+    await share.dbConnect();
+    col = share.cols;
     await col.logs.deleteMany({});
     await col.rootSitePageViews.deleteMany({});
     await col.blogSitePageViews.deleteMany({});
