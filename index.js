@@ -2,7 +2,6 @@ var cors = require('cors')
 var app = require('express')();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
-const MongoClient = require('mongodb').MongoClient;
 var share = require('./share');
 
 var port = 3080;
@@ -18,9 +17,7 @@ server.listen(port, '0.0.0.0', function () {
 });
 
 app.get('/', async function (req, res) {
-  const ret = Object.assign({}, req.query);
-  ret['data'] = await share.getStat(req);
-  res.json(ret);
+  res.write("Sonub supporting server!");
 })
 
 
