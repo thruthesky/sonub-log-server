@@ -36,11 +36,6 @@ exports.dbConnect = async function () {
         console.log(err.stack);
         return;
     }
-    // this.cols.logs = this.db.collection('logs');
-    // this.cols.rootSitePageViews = this.db.collection('rootSitePageViews');
-    // this.cols.blogSitePageViews = this.db.collection('blogSitePageViews');
-    // this.cols.rootSiteVisitorsByIp = this.db.collection('rootSiteVisitorsByIp');
-    // this.cols.blogSiteVisitorsByIp = this.db.collection('blogSiteVisitorsByIp');
 
     await this.dbCreateIndexes(this.db);
     return this.db;
@@ -108,20 +103,17 @@ exports.getStat = async function (req) {
 
 
 exports.pageView = async function (req) {
+    // console.log('pageView', req);
     const q = req.query;
-
-
     const from_Ymd = this.makeYmd({
-        year: q,
-        from_year,
+        year: q.from_year,
         month: q.from_month,
-        q: req.from_day
+        day: q.from_day
     });
     const to_Ymd = this.makeYmd({
-        year: q,
-        to_year,
+        year: q.to_year,
         month: q.to_month,
-        q: req.to_day
+        day: q.to_day
     });
     const searchSpec = {
         Ymd: {
@@ -133,24 +125,52 @@ exports.pageView = async function (req) {
     /**
      * check of blog or main
      */
-    let blog = 'rootSitePageViews';
+    let collName = 'rootSitePageViews';
     if (q.domain != void 0) {
-        blog = 'blogSitePageViews';
+        collName = 'blogSitePageViews';
     }
+    return this.searchCollectionBySpec(collName, searchSpec);
+}
 
-    // console.log("pageView::spec", q, blog, q.domain);
-    const res = await this.cols[blog].find(searchSpec)
+exports.siteUniqueVisitor = async function (req) {
+    // console.log('pageView', req);
+    const q = req.query;
+    const from_Ymd = this.makeYmd({
+        year: q.from_year,
+        month: q.from_month,
+        day: q.from_day
+    });
+    const to_Ymd = this.makeYmd({
+        year: q.to_year,
+        month: q.to_month,
+        day: q.to_day
+    });
+    const searchSpec = {
+        Ymd: {
+            $gte: from_Ymd,
+            $lte: to_Ymd
+        }
+    };
+
+    /**
+     * check of blog or main
+     */
+    let collName = 'rootSiteVisitorsByIp';
+    if (q.domain != void 0) {
+        collName = 'blogSiteVisitorsByIp';
+    }
+    return await this.searchCollectionBySpec(collName, searchSpec);
+}
+
+exports.searchCollectionBySpec = async function( collName, searchSpec) {
+    const res = await this.col(collName).find(searchSpec)
         .project({
             _id: 0,
             domain: 1,
-            year: 1,
-            month: 1,
-            day: 1,
+            Ymd: 1,
             count: 1
         })
         .toArray();
-    // console.log('res: ', res);
-
     return res;
 }
 
@@ -211,13 +231,13 @@ exports.preProcessPageView = async function (obj) {
  * @param {extraSpect: object, unique: boolean } options options.
  */
 exports.increaseCountBySpec = async function (colName, spec) {
-    const re = await this.db.collection(colName).find(spec).toArray();
+    const re = await this.col(colName).find(spec).toArray();
     let count = 0;
     if (re.length) {
         count = re[0].count;
     }
     count++;
-    await this.db.collection(colName).updateOne(spec, {
+    await this.col(colName).updateOne(spec, {
         $set: {
             count: count
         }
@@ -234,7 +254,7 @@ exports.increaseCountBySpec = async function (colName, spec) {
  * @param {*} logSpec search spec to check if the spec exists in logs collection
  */
 exports.increaseCountOnUnique = async function ( colName, spec, logSpec) {
-    const searched = await this.db.collection('logs').find(logSpec).toArray();
+    const searched = await this.col('logs').find(logSpec).toArray();
     if ( searched.length === 1 ) {
         await this.increaseCountBySpec( colName, spec );
     }
@@ -304,28 +324,18 @@ exports.dbCreateIndexes = async function () {
      * PageView Indexes
      */
     await this.col('rootSitePageViews').createIndex({
-        year: 1,
-        month: 1,
-        day: 1
+        Ymd: 1
     });
     await this.col('blogSitePageViews').createIndex({
         domain: 1,
-        year: 1,
-        month: 1,
-        day: 1
+        Ymd: 1
     });
     await this.col('rootSiteVisitorsByIp').createIndex({
-        year: 1,
-        month: 1,
-        day: 1,
-        ip: 1
+        Ymd: 1
     });
     await this.col('blogSiteVisitorsByIp').createIndex({
         domain: 1,
-        year: 1,
-        month: 1,
-        day: 1,
-        ip: 1
+        Ymd: 1
     });
 
 }
