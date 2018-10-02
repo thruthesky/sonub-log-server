@@ -1,110 +1,54 @@
-const MongoClient = require('mongodb').MongoClient;
+var sqlite3 = require('sqlite3').verbose();
+
 var exports = module.exports = {};
 
-var client;
 
-exports.db = null;
+exports.db = new sqlite3.Database('sonub.sqlite3');
 
-/**
- * 
- * @example
-    const col = await share.dbConnect();
-    col.deleteMany({});
-    await runTest();
-    share.dbClose();
- */
-exports.dbConnect = async function () {
-    console.log('Trying to connect to MongoDB...')
-    try {
-        client = await MongoClient.connect('mongodb://localhost');
-        this.db = client.db('test');
-    } catch (err) {
-        console.log(err.stack);
-        return;
-    }
-
-    await this.dbCreateIndexes(this.db);
-    return this.db;
-};
-
-exports.dbClose = async function () {
-    try {
-        await client.close();
-    } catch (e) {
-        console.log('=================> Caught in DB closing...');
-        console.log(e.message);
-    }
-
-}
 
 
 exports.documentData = function (socket, data) {
-    if (typeof data != 'object') {
-        data = {};
-    }
-    if (typeof data['path'] == 'undefined') {
-        data.path = '';
-    }
-    if (typeof data['domain'] == 'undefined') {
-        data.domain = '';
-    }
-    if (typeof data['idx_member'] == 'undefined') {
-        data.idx_member = 0;
-    }
-    var d = new Date();
-    if (data.date) {
-        d = new Date(data.date);
-    }
-
-
     var res = {
-        domain: data.domain,
-        ip: socket.request.connection.remoteAddress,
-        userAgent: socket.request.headers['user-agent'],
-        year: d.getFullYear(),
-        month: d.getMonth(),
-        day: d.getDate(),
-        hour: d.getHours(),
-        time: d.getTime(),
-        path: data.path,
-        idx_member: data.idx_member
+        $YmdHis: this.YmdHis(),
+        $domain: data.domain,
+        $ip: socket.request.connection.remoteAddress,
+        $user_agent: socket.request.headers['user-agent'],
+        $referrer: data.referrer,
+        $path: data.path,
+        $idx_member: data.idx_member,
+        $id: data.id,
+        $status: ''
     };
-    res['Ymd'] = this.makeYmd( res );
     return res;
 }
 
-exports.makeYmd = function (obj) {
 
-    /**
-     * Error handling for wrong parameters.
-     */
-    if (!obj || !obj.year || typeof obj.month === 'undefined' || !obj.day) {
-        return false;
-    }
-    let Ymd = '';
-    Ymd += obj.year;
-    if (obj.month < 10) {
-        Ymd += '0' + obj.month;
+/**
+ * 
+ * @param {*} n 
+ */
+exports.add0 = function(n) {
+    if ( n < 10 ) {
+        return '0' + n;
     } else {
-        Ymd += '' + obj.month;
+        return '' + n;
     }
-    if (obj.day < 10) {
-        Ymd += '0' + obj.day;
-    } else {
-        Ymd += '' + obj.day;
-    }
-    return Ymd;
+}
+exports.YmdHis = function () {
+    const d = new Date();
+    var year = d.getFullYear();
+    var month = d.getMonth() + 1;
+    var day = d.getDate();
+    var hours = d.getHours();
+    var minutes = d.getMinutes();
+    var seconds = d.getSeconds();
+    return year + this.add0( month ) + this.add0(day) + this.add0( hours ) + this.add0(minutes) + this.add0(seconds);
 }
 
 exports.log = async function (socket, data) {
     const logObject = this.documentData(socket, data);
-    const re = await this.col('logs').insertOne(logObject);
-    if (re.insertedCount == 1) {
-
-    } else {
-        console.log('error ... !');
-    }
-    await this.preProcess(logObject);
+    const $q = "INSERT INTO logs VALUES(null, $YmdHis, $domain, $path, $ip, $user_agent, $idx_member, $id, $referrer, $status ) ";
+    this.db.run( $q, logObject );
 }
 
 // exports.getStat = async function (req) {

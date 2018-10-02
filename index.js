@@ -6,8 +6,6 @@ var share = require('./share');
 
 var port = 3080;
 
-share.dbConnect();
-
 app.use(cors());
 /**
  * '0.0.0.0' means we want to use IPv4
