@@ -11,9 +11,28 @@ if ( $_SERVER['REQUEST_METHOD'] == 'OPTIONS' ) {
 
 require 'db.config.php';
 require 'db.library.php';
+require 'library.php';
+
 
 
 define('COMPUTATION_CODE', 1);
 
 
 
+
+if ( ! _re('function') ) error(-1, 'Function name is empty.');
+
+
+if ( !function_exists( _re('function') ) ) error( -2, _re('function') . " - function does not exists");
+
+
+
+_re('function')();
+
+
+
+
+
+
+
+error(-3, "Unhandled function. No data");
