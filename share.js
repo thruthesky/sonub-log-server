@@ -128,6 +128,7 @@ exports.pageView = async function (req) {
     let collName = 'rootSitePageViews';
     if (q.domain != void 0) {
         collName = 'blogSitePageViews';
+        searchSpec['domain'] = q.domain;
     }
     return this.searchCollectionBySpec(collName, searchSpec);
 }
@@ -158,11 +159,13 @@ exports.siteUniqueVisitor = async function (req) {
     let collName = 'rootSiteVisitorsByIp';
     if (q.domain != void 0) {
         collName = 'blogSiteVisitorsByIp';
+        searchSpec['domain'] = q.domain;
     }
     return await this.searchCollectionBySpec(collName, searchSpec);
 }
 
 exports.searchCollectionBySpec = async function( collName, searchSpec) {
+    console.log('searchCollectionBySpec', collName, searchSpec);
     const res = await this.col(collName).find(searchSpec)
         .project({
             _id: 0,
