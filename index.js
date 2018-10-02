@@ -1,46 +1,29 @@
-var cors = require('cors')
+var fs = require('fs');
 var app = require('express')();
-var server = require('http').Server(app);
-var io = require('socket.io')(server);
-var share = require('./share');
-
-var port = 3080;
-
-app.use(cors());
-/**
- * '0.0.0.0' means we want to use IPv4
- */
-server.listen(port, '0.0.0.0', function () {
-  console.log(`Server starts on ${port} with IPv4`);
+var https = require('https');
+var cors = require('cors');
+var server = https.createServer({
+  key: fs.readFileSync('./star_sonub.key'),
+  cert: fs.readFileSync('./star_sonub.crt'),
+  // requestCert: false,
+  rejectUnauthorized: false
+}, app);
+server.listen(4431, '0.0.0.0', function() {
+  console.log('Sonub realtime server is running on 4431 with IPv4!');
 });
 
-app.get('/', async function (req, res) {
+app.use(cors());
+app.get("/", function (req, res) {
   res.write("Sonub supporting server!");
-})
+  res.end();
+});
 
-
-/**
- * Wait for client connection
- */
-io.on('connection', function (socket) {
-  /**
-   * We got a client
-   */
-
-  /**
-   * Save very first log for the client.
-   */
-
-  /**
-   * Welcome client. Send a message to client.
-   */
+var share = require('./share');
+var io = require('socket.io').listen(server);
+io.sockets.on('connection', function (socket) {
   socket.emit('welcome', `let's begin`);
-
-  /**
-   * Wait for additional log message from client.
-   */
+  // Wait for additional log message from client.
   socket.on('log', function (data) {
     share.log(socket, data);
   });
-
 });

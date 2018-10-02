@@ -261,7 +261,7 @@
 			
 			}
             
-            if (($param) && is_array($param) && ($this->getPrepare()))
+            if (isset($param) && is_array($param) && ($this->getPrepare()))
                 $this->result->finalize(); 
 
 			// If debug ALL queries
