@@ -2,58 +2,11 @@
 
 NodeJS Server for sonub logging
 
-## style guide
-
-1 file. one thing.
-1 function does only one thing.
-
-
-## Protocol
-
-### Page view
-
-#### Page view request
-
-```` json
-{
-    function: 'pageView',
-    domain?: string,
-    from_year: number,
-    from_month: number,
-    from_day: number,
-    to_year: number,
-    to_month: number,
-    to_day: number
-}
-````
-
-#### Page view response
-
-```` json
-{
-    function: 'pageView',
-    domain?: string,
-    from_year: number,
-    from_month: number,
-    from_day: number,
-    to_year: number,
-    to_month: number,
-    data: {
-        [date: string]: number
-    }
-}
-````
-
-## Unit testing
-
-* How to generate test data
+## Install
 
 ```` sh
-node generate-test-data.js
-````
-
-* How to run test
-
-```` sh
-node test.js
+git clone https://github.com/thruthesky/sonub-supporting-server
+cd sonub-supporting-server
+npm i
+pm2 start index.js
 ````
