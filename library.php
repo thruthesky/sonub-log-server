@@ -129,11 +129,13 @@ function getNextDate( $date ) {
 function pageView() {
     $date = getFromDate();
     $data = [];
+    $from_hour = _re('from_hour', 0);
+    $to_hour = _re('to_hour', 23);
     do {
         $conds = [];
         if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-        $conds[] = "YmdHis>={$date}000000";
-        $conds[] = "YmdHis<={$date}235959";
+        $conds[] = "YmdHis>={$date}{$from_hour}0000";
+        $conds[] = "YmdHis<={$date}{$to_hour}5959";
         $where = implode(' AND ', $conds);
         $q = "SELECT COUNT(*) FROM logs WHERE $where";
         $data[$date] = db()->result($q);
@@ -158,8 +160,8 @@ function everyHourPageView() {
         for( $hour = $from_hour; $hour <= $to_hour; $hour++ ) {
             $conds = [];
             if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-            $conds[] = "YmdHis>={$date}{$hour}0000";
-            $conds[] = "YmdHis<={$date}{$hour}5959";
+            $conds[] = "YmdHis>={$date}" . add0($hour). "0000";
+            $conds[] = "YmdHis<={$date}" . add0($hour). "5959";
             $where = implode(' AND ', $conds);
             $q = "SELECT COUNT(*) FROM logs WHERE $where";
             $data[$date][] = db()->result($q);
@@ -178,11 +180,13 @@ function everyHourPageView() {
 function uniqueVisitor() {
     $date = getFromDate();
     $data = [];
+    $from_hour = add0(_re('from_hour', 0));
+    $to_hour = add0(_re('to_hour', 23));
     do {
         $conds = [];
         if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-        $conds[] = "YmdHis>={$date}000000";
-        $conds[] = "YmdHis<={$date}235959";
+        $conds[] = "YmdHis>={$date}{$from_hour}0000";
+        $conds[] = "YmdHis<={$date}{$to_hour}5959";
         $where = implode(' AND ', $conds);
         $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
         $q = "SELECT COUNT(*) FROM ($sub_q)";
@@ -209,8 +213,8 @@ function everyHourUniqueVisitor() {
         for( $hour = $from_hour; $hour <= $to_hour; $hour++ ) {
             $conds = [];
             if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-            $conds[] = "YmdHis>={$date}{$hour}0000";
-            $conds[] = "YmdHis<={$date}{$hour}5959";
+            $conds[] = "YmdHis>={$date}" . add0($hour). "0000";
+            $conds[] = "YmdHis<={$date}" . add0($hour). "5959";
             $where = implode(' AND ', $conds);
             $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
             $q = "SELECT COUNT(*) FROM ($sub_q)";
