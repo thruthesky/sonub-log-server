@@ -143,8 +143,37 @@ function pageView() {
 
     success( $data );
 }
+
 /**
  *
+ */
+function everyHourPageView() {
+    $date = getFromDate();
+    $data = [];
+    $from_hour = _re('from_hour', 0);
+    $to_hour = _re('to_hour', 23);
+    do {
+
+        $data[$date] = [];
+        for( $hour = $from_hour; $hour <= $to_hour; $hour++ ) {
+            $conds = [];
+            if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
+            $conds[] = "YmdHis>={$date}{$hour}0000";
+            $conds[] = "YmdHis<={$date}{$hour}5959";
+            $where = implode(' AND ', $conds);
+            $q = "SELECT COUNT(*) FROM logs WHERE $where";
+            $data[$date][] = db()->result($q);
+        }
+
+        $date = getNextDate( $date );
+    } while ( $date <= getUntilDate() );
+
+    success( $data );
+}
+
+
+/**
+ * Count Unique Visitor
  */
 function uniqueVisitor() {
     $date = getFromDate();
@@ -157,11 +186,41 @@ function uniqueVisitor() {
         $where = implode(' AND ', $conds);
         $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
         $q = "SELECT COUNT(*) FROM ($sub_q)";
-//        di($q);
         $data[$date] = db()->result($q);
         $date = getNextDate( $date );
     } while ( $date <= getUntilDate() );
 
-//    di($data);
     success( $data );
 }
+
+
+/**
+ * Count Unique Visitor
+ */
+function everyHourUniqueVisitor() {
+    $date = getFromDate();
+    $data = [];
+
+    $from_hour = _re('from_hour', 0);
+    $to_hour = _re('to_hour', 23);
+    do {
+
+        $data[$date] = [];
+        for( $hour = $from_hour; $hour <= $to_hour; $hour++ ) {
+            $conds = [];
+            if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
+            $conds[] = "YmdHis>={$date}{$hour}0000";
+            $conds[] = "YmdHis<={$date}{$hour}5959";
+            $where = implode(' AND ', $conds);
+            $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
+            $q = "SELECT COUNT(*) FROM ($sub_q)";
+            $data[$date][] = db()->result($q);
+        }
+
+        $date = getNextDate( $date );
+    } while ( $date <= getUntilDate() );
+
+    success( $data );
+}
+
+
