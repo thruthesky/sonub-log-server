@@ -17,6 +17,7 @@ exports.documentData = function (socket, data) {
         $path: data.path,
         $idx_member: data.idx_member,
         $id: data.id,
+        $lang: data.lang,
         $status: ''
     };
     return res;
@@ -47,7 +48,7 @@ exports.YmdHis = function () {
 
 exports.log = async function (socket, data) {
     const logObject = this.documentData(socket, data);
-    const $q = "INSERT INTO logs VALUES(null, $YmdHis, $domain, $path, $ip, $user_agent, $idx_member, $id, $referrer, $status ) ";
+    const $q = "INSERT INTO logs VALUES(null, $YmdHis, $domain, $path, $ip, $user_agent, $idx_member, $id, $referrer, $lang, $status ) ";
     this.db.run( $q, logObject );
 }
 
