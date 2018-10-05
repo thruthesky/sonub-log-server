@@ -155,8 +155,6 @@ function everyHourPageView() {
     $from_hour = _re('from_hour', 0);
     $to_hour = _re('to_hour', 23);
     do {
-
-        $data[$date] = [];
         for( $hour = $from_hour; $hour <= $to_hour; $hour++ ) {
             $conds = [];
             if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
@@ -164,7 +162,12 @@ function everyHourPageView() {
             $conds[] = "YmdHis<={$date}" . add0($hour). "5959";
             $where = implode(' AND ', $conds);
             $q = "SELECT COUNT(*) FROM logs WHERE $where";
-            $data[$date][] = db()->result($q);
+            $cnt = db()->result($q);
+            if ( isset($data[$hour]) ) {
+                $data[$hour] += $cnt;
+            } else {
+                $data[$hour] = 0;
+            }
         }
 
         $date = getNextDate( $date );
@@ -209,7 +212,6 @@ function everyHourUniqueVisitor() {
     $to_hour = _re('to_hour', 23);
     do {
 
-        $data[$date] = [];
         for( $hour = $from_hour; $hour <= $to_hour; $hour++ ) {
             $conds = [];
             if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
@@ -218,7 +220,12 @@ function everyHourUniqueVisitor() {
             $where = implode(' AND ', $conds);
             $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
             $q = "SELECT COUNT(*) FROM ($sub_q)";
-            $data[$date][] = db()->result($q);
+            $cnt = db()->result($q);
+            if ( isset($data[$hour]) ) {
+                $data[$hour] += $cnt;
+            } else {
+                $data[$hour] = 0;
+            }
         }
 
         $date = getNextDate( $date );
