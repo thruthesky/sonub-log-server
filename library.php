@@ -123,12 +123,23 @@ function getNextDate( $date ) {
     return date('Ymd', $stamp + 60 * 60 * 24 );
 }
 
+function statistics() {
+    $ret = [
+        'pageView' => pageView(true),
+        'uniqueVisitor' => uniqueVisitor(true),
+        'visitorLanguage' => visitorLanguage(true),
+    ];
+
+    success( $ret );
+}
+
 /**
  *
  */
-function pageView() {
+function pageView($return = false) {
     $date = getFromDate();
     $data = [];
+    $total = 0;
     $from_hour = _re('from_hour', 0);
     $to_hour = _re('to_hour', 23);
     do {
@@ -139,12 +150,52 @@ function pageView() {
         $where = implode(' AND ', $conds);
         $q = "SELECT COUNT(*) FROM logs WHERE $where";
         $data[$date] = db()->result($q);
+        $total += $data[$date];
 
         $date = getNextDate( $date );
     } while ( $date <= getUntilDate() );
 
-    success( $data );
+    $ret = [
+        'stats' => $data,
+        'total' => $total
+    ];
+
+    if ( $return ) return $ret;
+    else success( $ret );
 }
+
+/**
+ * Count Unique Visitor
+ */
+function uniqueVisitor($return = false) {
+    $date = getFromDate();
+    $data = [];
+    $total = 0;
+    $from_hour = add0(_re('from_hour', 0));
+    $to_hour = add0(_re('to_hour', 23));
+    do {
+        $conds = [];
+        if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
+        $conds[] = "YmdHis>={$date}{$from_hour}0000";
+        $conds[] = "YmdHis<={$date}{$to_hour}5959";
+        $where = implode(' AND ', $conds);
+        $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
+        $q = "SELECT COUNT(*) FROM ($sub_q)";
+        $data[$date] = db()->result($q);
+        $total += $data[$date];
+        $date = getNextDate( $date );
+    } while ( $date <= getUntilDate() );
+
+    $ret = [
+        'stats' => $data,
+        'total' => $total
+    ];
+
+    if ( $return ) return $ret;
+    else success( $ret );
+}
+
+
 
 /**
  *
@@ -175,31 +226,6 @@ function everyHourPageView() {
 
     success( $data );
 }
-
-
-/**
- * Count Unique Visitor
- */
-function uniqueVisitor() {
-    $date = getFromDate();
-    $data = [];
-    $from_hour = add0(_re('from_hour', 0));
-    $to_hour = add0(_re('to_hour', 23));
-    do {
-        $conds = [];
-        if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-        $conds[] = "YmdHis>={$date}{$from_hour}0000";
-        $conds[] = "YmdHis<={$date}{$to_hour}5959";
-        $where = implode(' AND ', $conds);
-        $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
-        $q = "SELECT COUNT(*) FROM ($sub_q)";
-        $data[$date] = db()->result($q);
-        $date = getNextDate( $date );
-    } while ( $date <= getUntilDate() );
-
-    success( $data );
-}
-
 
 /**
  * Count Unique Visitor
@@ -232,6 +258,41 @@ function everyHourUniqueVisitor() {
     } while ( $date <= getUntilDate() );
 
     success( $data );
+}
+
+
+
+/**
+ * Count Visitor Language
+ */
+function visitorLanguage( $return = false) {
+    $date = getFromDate();
+    $data = [];
+    $total = 0;
+    // $from_hour = add0(_re('from_hour', 0));
+    // $to_hour = add0(_re('to_hour', 23));
+
+    // do {
+
+    //     $conds = [];
+    //     if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
+    //     $conds[] = "YmdHis>={$date}{$from_hour}0000";
+    //     $conds[] = "YmdHis<={$date}{$to_hour}5959";
+    //     $where = implode(' AND ', $conds);
+    //     $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
+    //     $q = "SELECT COUNT(*) FROM ($sub_q)";
+    //     $data[$date] = db()->result($q);
+    //     $total += $data[$date];
+    //     $date = getNextDate( $date );
+    // } while ( $date <= getUntilDate() );
+
+    $ret = [
+        'stats' => $data,
+        'total' => $total
+    ];
+
+    if ( $return ) return $ret;
+    else success( $ret );
 }
 
 
