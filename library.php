@@ -115,13 +115,27 @@ function getUntilDate() {
  *
  * @desc Get '20180505' and returns '20180506'
  *
+ * @param $skip this will leap to next days
  * @param $date
  * @return false|string
  */
-function getNextDate( $date ) {
+function getNextDate( $date, $skip = 1 ) {
     $stamp = stamp_of_YmdHis("{$date}000000");
-    return date('Ymd', $stamp + 60 * 60 * 24 );
+    return date('Ymd', $stamp + 60 * 60 * 24 * $skip );
 }
+
+/**
+ * get the number of days between two dates
+ */
+function numberOfDaysBetween( $begin, $end ) {  
+
+    $begin_stamp = stamp_of_YmdHis( "{$begin}000000");
+    $end_stamp = stamp_of_YmdHis( "{$end}000000" );
+
+    $datediff = $end_stamp - $begin_stamp;
+    
+    return round($datediff / (60 * 60 * 24));
+} 
 
 function statistics() {
     $ret = [
@@ -138,6 +152,8 @@ function statistics() {
  */
 function pageView($return = false) {
     $date = getFromDate();
+    $until_date = getUntilDate();
+
     $data = [];
     $total = 0;
     $from_hour = _re('from_hour', 0);
@@ -153,7 +169,7 @@ function pageView($return = false) {
         $total += $data[$date];
 
         $date = getNextDate( $date );
-    } while ( $date <= getUntilDate() );
+    } while ( $date <= $until_date );
 
     $ret = [
         'stats' => $data,
