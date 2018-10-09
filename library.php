@@ -148,27 +148,54 @@ function statistics() {
 }
 
 /**
- *
+ * @param bool $return if you need to return the data to xhr or return to method where it was called.
+ * @return array
  */
 function pageView($return = false) {
     $date = getFromDate();
     $until_date = getUntilDate();
+    $number_of_days = numberOfDaysBetween($date, $until_date);
+    $daySkip = 1;
+    if( $number_of_days > 30 ) {
+        $daySkip = ceil($number_of_days / 30);
+    }
 
     $data = [];
     $total = 0;
-    $from_hour = _re('from_hour', 0);
-    $to_hour = _re('to_hour', 23);
+    $last_date = false;
     do {
+        $nextDate = getNextDate( $date, $daySkip );
+        if( !$last_date && $nextDate > $until_date ) {
+            $nextDate = $until_date;
+            $last_date = true;
+        }
+        if( $nextDate > $until_date ) {
+            break;
+        }
+
         $conds = [];
         if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-        $conds[] = "YmdHis>={$date}{$from_hour}0000";
-        $conds[] = "YmdHis<={$date}{$to_hour}5959";
+
+        if ($daySkip > 1) {
+            $conds[] = "YmdHis>={$date}000000";
+            $conds[] = "YmdHis<={$nextDate}235959";
+        } else {
+            $conds[] = "YmdHis>={$date}000000";
+            $conds[] = "YmdHis<={$date}235959";
+        }
+
         $where = implode(' AND ', $conds);
         $q = "SELECT COUNT(*) FROM logs WHERE $where";
-        $data[$date] = db()->result($q);
-        $total += $data[$date];
 
-        $date = getNextDate( $date );
+        $cnt = db()->result($q);
+        if ( $daySkip > 1 ) {
+            $data[$nextDate] = $cnt;
+        } else {
+            $data[$date] = $cnt;
+        }
+        $total += $cnt;
+        
+        $date = $nextDate;
     } while ( $date <= $until_date );
 
     $ret = [
@@ -182,25 +209,56 @@ function pageView($return = false) {
 
 /**
  * Count Unique Visitor
+ * @param bool $return if you need to return the data to xhr or return to method where it was called.
+ * @return array
  */
 function uniqueVisitor($return = false) {
     $date = getFromDate();
+    $until_date = getUntilDate();
+    $number_of_days = numberOfDaysBetween($date, $until_date);
+    $daySkip = 1;
+    if( $number_of_days > 30 ) {
+        $daySkip = ceil($number_of_days / 30);
+    }
+
     $data = [];
     $total = 0;
-    $from_hour = add0(_re('from_hour', 0));
-    $to_hour = add0(_re('to_hour', 23));
+    $last_date = false;
     do {
+        $nextDate = getNextDate( $date, $daySkip );
+        if( !$last_date && $nextDate > $until_date ) {
+            $nextDate = $until_date;
+            $last_date = true;
+        }
+        if( $nextDate > $until_date ) {
+            break;
+        }
+
         $conds = [];
         if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
-        $conds[] = "YmdHis>={$date}{$from_hour}0000";
-        $conds[] = "YmdHis<={$date}{$to_hour}5959";
+
+        if ($daySkip > 1) {
+            $conds[] = "YmdHis>={$date}000000";
+            $conds[] = "YmdHis<={$nextDate}235959";
+        } else {
+            $conds[] = "YmdHis>={$date}000000";
+            $conds[] = "YmdHis<={$date}235959";
+        }
+
         $where = implode(' AND ', $conds);
         $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
         $q = "SELECT COUNT(*) FROM ($sub_q)";
-        $data[$date] = db()->result($q);
-        $total += $data[$date];
-        $date = getNextDate( $date );
-    } while ( $date <= getUntilDate() );
+
+        $cnt = db()->result($q);
+        if ( $daySkip > 1 ) {
+            $data[$nextDate] = $cnt;
+        } else {
+            $data[$date] = $cnt;
+        }
+        $total += $cnt;
+
+        $date = $nextDate;
+    } while ( $date <= $until_date );
 
     $ret = [
         'stats' => $data,
