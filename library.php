@@ -163,6 +163,7 @@ function pageView($return = false) {
     $data = [];
     $total = 0;
     $last_date = false;
+
     do {
         $nextDate = getNextDate( $date, $daySkip );
         if( !$last_date && $nextDate > $until_date ) {
@@ -188,6 +189,8 @@ function pageView($return = false) {
         $q = "SELECT COUNT(*) FROM logs WHERE $where";
 
         $cnt = db()->result($q);
+
+
         if ( $daySkip > 1 ) {
             $data[$nextDate] = $cnt;
         } else {
@@ -197,6 +200,7 @@ function pageView($return = false) {
         
         $date = $nextDate;
     } while ( $date <= $until_date );
+
 
     $ret = [
         'stats' => $data,

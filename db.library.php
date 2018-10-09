@@ -20,6 +20,9 @@ class ezSQL_DB {
     public function rows($q) {
         return $this->db->get_results($q, ARRAY_A);
     }
+    public function query($q) {
+        return $this->db->query( $q );
+    }
 }
 
 $exEzSQL = new ezSQL_DB();
