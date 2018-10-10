@@ -21,9 +21,11 @@ app.get("/", function (req, res) {
 var share = require('./share');
 var io = require('socket.io').listen(server);
 io.sockets.on('connection', function (socket) {
-  socket.emit('welcome', `let's begin`);
+  socket.emit('welcome', "let's begin");
   // Wait for additional log message from client.
   socket.on('log', function (data) {
+    // console.log('socket::', socket);
+    // console.log('data::', data);
     share.log(socket, data);
   });
 });

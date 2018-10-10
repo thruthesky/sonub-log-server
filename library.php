@@ -157,13 +157,13 @@ function pageView($return = false) {
     $number_of_days = numberOfDaysBetween($date, $until_date);
     $daySkip = 1;
     if( $number_of_days > 30 ) {
-        $daySkip = ceil($number_of_days / 30);
+        $daySkip = round($number_of_days / 30);
     }
 
     $data = [];
     $total = 0;
     $last_date = false;
-
+    $first_date = true;
     do {
         $nextDate = getNextDate( $date, $daySkip );
         if( !$last_date && $nextDate > $until_date ) {
@@ -177,8 +177,20 @@ function pageView($return = false) {
         $conds = [];
         if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
 
-        if ($daySkip > 1) {
+
+        if ( $first_date && $daySkip > 1 ) {
             $conds[] = "YmdHis>={$date}000000";
+            $conds[] = "YmdHis<{$nextDate}000000";
+            $first_date = false;
+        } else if ($last_date && $daySkip > 1) {
+            if( $date == $nextDate ) {
+                $conds[] = "YmdHis>={$date}000000";
+            } else {
+                $conds[] = "YmdHis>{$date}235959";
+            }
+            $conds[] = "YmdHis<={$nextDate}235959";
+        }  else if ($daySkip > 1) {
+            $conds[] = "YmdHis>{$date}235959";
             $conds[] = "YmdHis<={$nextDate}235959";
         } else {
             $conds[] = "YmdHis>={$date}000000";
@@ -222,12 +234,13 @@ function uniqueVisitor($return = false) {
     $number_of_days = numberOfDaysBetween($date, $until_date);
     $daySkip = 1;
     if( $number_of_days > 30 ) {
-        $daySkip = ceil($number_of_days / 30);
+        $daySkip = round($number_of_days / 30);
     }
 
     $data = [];
     $total = 0;
     $last_date = false;
+    $first_date = true;
     do {
         $nextDate = getNextDate( $date, $daySkip );
         if( !$last_date && $nextDate > $until_date ) {
@@ -241,17 +254,30 @@ function uniqueVisitor($return = false) {
         $conds = [];
         if ( $domain = _re('domain') ) $conds[] = "domain='$domain'";
 
-        if ($daySkip > 1) {
+
+        if ( $first_date && $daySkip > 1 ) {
             $conds[] = "YmdHis>={$date}000000";
+            $conds[] = "YmdHis<{$nextDate}000000";
+            $first_date = false;
+        } else if ($last_date && $daySkip > 1) {
+            if( $date == $nextDate ) {
+                $conds[] = "YmdHis>={$date}000000";
+            } else {
+                $conds[] = "YmdHis>{$date}235959";
+            }
+            $conds[] = "YmdHis<={$nextDate}235959";
+        }  else if ($daySkip > 1) {
+            $conds[] = "YmdHis>{$date}235959";
             $conds[] = "YmdHis<={$nextDate}235959";
         } else {
             $conds[] = "YmdHis>={$date}000000";
             $conds[] = "YmdHis<={$date}235959";
         }
 
+
         $where = implode(' AND ', $conds);
         $sub_q = "SELECT COUNT(*) FROM logs WHERE $where GROUP BY ip";
-        $q = "SELECT COUNT(*) FROM ($sub_q)";
+        $q = "SELECT COUNT(*) FROM ($sub_q) AS CNT";
 
         $cnt = db()->result($q);
         if ( $daySkip > 1 ) {

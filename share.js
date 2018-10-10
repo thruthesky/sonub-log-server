@@ -7,10 +7,11 @@ var connection = mysql.createConnection({
     host     : 'localhost',
     user     : 'root',
     password : '7777',
-    database : 'sonub'
+    database : '_sonub'
 });
 connection.connect();
 
+exports.connection = connection;
 
 
 
@@ -55,10 +56,10 @@ exports.YmdHis = function () {
 
 exports.log = function (socket, data) {
     const logObject = this.documentData(socket, data);
-    console.log('logBoject: ', logObject);
+    // console.log('logBoject: ', logObject);
     connection.query('INSERT INTO logs SET ? ', logObject, function (error, results, fields) {
         if (error) throw error;
-        console.log('The solution is: ', results);
+        // console.log('The solution is: ', results);
     });
     //
     // const db = this.db;
