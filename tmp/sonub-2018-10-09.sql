@@ -1,4 +1,3 @@
-
 CREATE TABLE `logs` (
   `idx` int(10) UNSIGNED NOT NULL,
   `YmdHis` bigint(10) UNSIGNED NOT NULL DEFAULT 0,
