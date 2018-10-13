@@ -5,8 +5,8 @@ var exports = module.exports = {};
 var mysql      = require('mysql');
 var connection = mysql.createConnection({
     host     : 'localhost',
-    user     : 'root',
-    password : '7777',
+    user     : '_sonub',
+    password : 'Wc~045s$5',
     database : '_sonub'
 });
 connection.connect();
