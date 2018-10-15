@@ -5,8 +5,8 @@ var exports = module.exports = {};
 var mysql      = require('mysql');
 var connection = mysql.createConnection({
     host     : 'localhost',
-    user     : 'root',
-    password : '7777',
+    user     : '_sonub',
+    password : 'Wc~045s$5',
     database : '_sonub'
 });
 connection.connect();
@@ -18,14 +18,14 @@ exports.connection = connection;
 exports.documentData = function (socket, data) {
     var res = {
         YmdHis: parseInt(this.YmdHis(), 10),
-        domain: data.domain,
-        ip: socket.request.connection.remoteAddress,
-        user_agent: socket.request.headers['user-agent'],
-        referrer: data.referrer,
-        path: data.path,
-        idx_member: data.idx_member,
-        id: data.id,
-        lang: data.lang,
+        domain: data.domain ? data.domain : '',
+        ip: socket.request.connection.remoteAddress ? socket.request.connection.remoteAddress : '',
+        user_agent: socket.request.headers['user-agent'] ? socket.request.headers['user-agent'] : '',
+        referrer: data.referrer ? data.referrer : '',
+        path: data.path ? data.path : '',
+        idx_member: data.idx_member ? data.idx_member : 0,
+        id: data.id ? data.id : '',
+        lang: data.lang ? data.lang : '',
         status: ''
     };
     return res;
