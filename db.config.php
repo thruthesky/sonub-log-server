@@ -7,7 +7,8 @@ $conn = new mysqli('localhost', '_sonub', 'Wc~045s$5', '_sonub', 0, '/tmp/mysql.
 $db = new ezSQL_mysqli('_sonub', 'Wc~045s$5', '_sonub');
 $db->dbh = $conn;
 
-
-
+//$conn = new mysqli('localhost', 'root', '7777', '_sonub', 0, '/tmp/mysql.sock');
+//$db = new ezSQL_mysqli();
+//$db->dbh = $conn;
 
 
