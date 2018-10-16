@@ -23,6 +23,34 @@ class ezSQL_DB {
     public function query($q) {
         return $this->db->query( $q );
     }
+
+
+    /**
+     * @param $k
+     * @param null $v
+     * @return mixed
+     *
+     * @example
+     *
+    db()->config('hi', 'how are you?');
+
+
+    echo db()->config('hi');
+
+     */
+    public function config( $k, $v = null ) {
+        if ( $v !== null ) {
+            $idx = $this->result("SELECT `idx` FROM config WHERE code = '$k'");
+            if ( $idx ) {
+                $this->db->update( 'config', [ 'value' => $v ] );
+            } else {
+                $this->db->insert( 'config', ['code' => $k, 'value' => $v]);
+            }
+            return null;
+        } else {
+            return $this->result("SELECT `value` FROM config WHERE code = '$k'");
+        }
+    }
 }
 
 $exEzSQL = new ezSQL_DB();
