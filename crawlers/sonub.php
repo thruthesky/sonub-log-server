@@ -27,7 +27,7 @@ $q = [
 $qs = http_build_query($q);
 
 
-$url = "https://local.philgo.com/api.php?$qs";
+$url = "https://www.philgo.com/api.php?$qs";
 //echo $url;
 $re = file_get_contents($url);
 if ( $re ) {
